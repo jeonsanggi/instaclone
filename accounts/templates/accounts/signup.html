@@ -1,0 +1,22 @@
+{% extends "accounts/layout.html" %}
+{% load static %}
+{% block content %}
+<div id="main_container">
+        <div class="form_container">
+            <div class="form">
+                <form action="" method="post" enctype="multipart/form-data">
+                    <!-- form 데이터를 부를 때마다 무작위로 문자열을 생성해 form 데이터를 보호는데 도움을 줌 -->
+                    {% csrf_token %}
+                        {{ form.as_p }}
+                    <input class="submit_btn" type="submit" value="가입">
+                </form>
+            </div>
+
+            <div class="bottom_box">
+                <div>
+                    <span>아이디가 있다면</span><a href="">로그인</a>
+                </div>
+            </div>
+        </div>
+</div>
+{% endblock %}
