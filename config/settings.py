@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'accounts',
+    'post',
 ]
 
 MIDDLEWARE = [
@@ -136,5 +137,7 @@ STATICFILES_DIRS = [
 #Media files(이미지 파일)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+SITE_ID = 1
 
 LOGIN_REDIRECT_URL='/'
