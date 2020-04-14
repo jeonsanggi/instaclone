@@ -7,24 +7,46 @@ from .models import Post, Like, Comment
 from .forms import PostForm, CommentForm
 from django.http import HttpResponse
 import json
-
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 
 def post_list(request):
     post_list = Post.objects.all()
 
+    comment_form = CommentForm()
+    paginator = Paginator(post_list, 3)
+    page_num = request.POST.get('page')
+
+    try:
+        posts = paginator.page(page_num)
+    except PageNotAnInteger:
+        posts = paginator.page(1)
+    except EmptyPage:
+        posts = paginator.page(paginator.num_pages)
+
+    if request.is_ajax():
+        return render(request, 'post/post_list_ajax.html', {
+            'posts': posts,
+            'comment_form': comment_form,
+        })
+
     if request.user.is_authenticated:
         username = request.user
         user = get_object_or_404(get_user_model(), username=username)
         user_profile = user.profile
+        follow_set = request.user.profile.get_following
+        follow_post_list = Post.objects.filter(author__profile__in=follow_set)
 
         return render(request, 'post/post_list.html', {
             'user_profile': user_profile,
-            'posts' : post_list,
+            'posts' : posts,
+            'follow_post_list': follow_post_list,
+            'comment_form': comment_form,
         })
     else:
         return render(request, 'post/post_list.html', {
-            'posts': post_list,
+            'posts': posts,
+            'comment_form': comment_form,
         })
 
 #로그인이 되어야 아래 함수를 실행할 수 있음
