@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
+import re
 
 
 # Create your models here.
@@ -22,6 +23,9 @@ class Post(models.Model):
                                 format = 'JPEG',
                                 options={'quality': 90})
     content = models.CharField(max_length=140, help_text="최대길이 140자 입력이 가능합니다.")
+
+    tag_set = models.ManyToManyField('Tag', blank=True)
+
     like_user_set = models.ManyToManyField(settings.AUTH_USER_MODEL,
                                             blank=True,
                                             related_name = 'like_user_set',
@@ -37,6 +41,16 @@ class Post(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    def tag_save(self):
+        tags = re.findall(r'#(\w+)\b', self.content)
+
+        if not tags:
+            return
+
+        for t in tags:
+            tag, tag_created = Tag.objects.get_or_create(name=t)
+            self.tag_set.add(tag)
+
     @property
     def like_count(self):
         return self.like_user_set.count()
@@ -47,6 +61,7 @@ class Post(models.Model):
 
     def __str__(self):
         return self.content
+
 
 # 좋아요
 class Like(models.Model):
@@ -85,3 +100,10 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.content
+
+# 태그
+class Tag(models.Model):
+    name = models.CharField(max_length=148, unique=True)
+
+    def __str__(self):
+        return self.name

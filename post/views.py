@@ -3,15 +3,29 @@ from django.shortcuts import get_object_or_404 , redirect, render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from .models import Post, Like, Comment
+from .models import Post, Like, Comment, Tag
 from .forms import PostForm, CommentForm
 from django.http import HttpResponse
 import json
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import Count
 
+# tag에 대한 내용을 필터링하기 위해 tag=None
+def post_list(request, tag=None):
+    # annotate는 엑셀에서 컬럼을 추가하는 개념과 유사/ oreder_by에서 -는 역순
+    tag_all = Tag.objects.annotate(num_post=Count('post')).order_by('-num_post')
 
-def post_list(request):
-    post_list = Post.objects.all()
+    if tag:
+        ## tag_set의 name 소대문자 상관없이 tag에 넣는 법
+        post_list = Post.objects.filter(tag_set__name__iexact=tag) \
+            .prefetch_related('tag_set', 'like_user_set__profile', 'comment_set__author__profile',
+                              'author__profile__follower_user', 'author__profile__follower_user__from_user') \
+            .select_related('author__profile')
+    else:
+        post_list = Post.objects.all() \
+            .prefetch_related('tag_set', 'like_user_set__profile', 'comment_set__author__profile',
+                              'author__profile__follower_user', 'author__profile__follower_user__from_user') \
+            .select_related('author__profile')
 
     comment_form = CommentForm()
     paginator = Paginator(post_list, 3)
@@ -30,6 +44,11 @@ def post_list(request):
             'comment_form': comment_form,
         })
 
+    if request.method == 'POST':
+        tag = request.POST.get('tag')
+        tag_clean = ''.join(e for e in tag if e.isalnum())
+        return redirect('post:post_search', tag_clean)
+
     if request.user.is_authenticated:
         username = request.user
         user = get_object_or_404(get_user_model(), username=username)
@@ -39,14 +58,18 @@ def post_list(request):
 
         return render(request, 'post/post_list.html', {
             'user_profile': user_profile,
-            'posts' : posts,
+            'tag': tag,
+            'posts': posts,
             'follow_post_list': follow_post_list,
             'comment_form': comment_form,
+            'tag_all': tag_all,
         })
     else:
         return render(request, 'post/post_list.html', {
+            'tag': tag,
             'posts': posts,
             'comment_form': comment_form,
+            'tag_all': tag_all,
         })
 
 #로그인이 되어야 아래 함수를 실행할 수 있음
@@ -59,7 +82,7 @@ def post_new(request):
             post = form.save(commit=False)
             post.author = request.user
             post.save()
-            #post.tag_save()
+            post.tag_save()
             messages.info(request, '새 글이 등록되었습니다.')
             return redirect('post:post_list')
     else:
@@ -79,8 +102,8 @@ def post_edit(request, pk):
         form = PostForm(request.POST, request.FILES, instance=post)
         if form.is_valid():
             post = form.save()
-            # post.tag_set.clear()
-            # post.tag.save()
+            post.tag_set.clear()
+            post.tag.save()
             messages.success(request, '수정완료')
             return redirect('post:post_list')
     else:
