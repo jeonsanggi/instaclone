@@ -1,5 +1,7 @@
 {% extends "post/layout.html" %}
 {% load static %}
+{% load post_extras %}
+
 
 {% block head %}
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -109,6 +111,9 @@
                       <span id="like-count-{{ post.id }}">좋아요{{ post.like_count }}개</span>
                       <span id="bookmark-count-{{ post.id }}">북마크{{ post.bookmark_count }}</span>
                   </div>
+
+                  <div class="content">{{ post|add_link|safe|linebreaksbr }}</div>
+
                   <div class="comment_container">
                       <div class="comment" id="comment-list-ajax-post{{post.id}}">
                           {% for comment in post.comment_set.all %}
