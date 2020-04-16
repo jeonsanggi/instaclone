@@ -10,6 +10,15 @@ import json
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Count
 
+def post_detail(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    comment_form = CommentForm()
+
+    return render(request, 'post/post_detail.html', {
+        'comment_form': comment_form,
+        'post': post,
+    })
+
 # tag에 대한 내용을 필터링하기 위해 tag=None
 def post_list(request, tag=None):
     # annotate는 엑셀에서 컬럼을 추가하는 개념과 유사/ oreder_by에서 -는 역순
