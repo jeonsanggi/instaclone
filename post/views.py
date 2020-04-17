@@ -19,6 +19,25 @@ def post_detail(request, pk):
         'post': post,
     })
 
+def my_post_list(request, username):
+    user = get_object_or_404(get_user_model(), username=username)
+    user_profile = user.profile
+
+    target_user = get_user_model().objects.filter(id=user.id).select_related('profile') \
+        .prefetch_related('profile__follwer_user__from_user', 'profile__follow_user__to_user')
+
+    post_list = user.post_set.all()
+
+    all_post_list = Post.objects.all()
+
+    return render(request, 'post/my_post_list.html',{
+        'user_profile': user_profile,
+        'target_user': target_user,
+        'post_list': post_list,
+        'all_post_list': all_post_list,
+        'username': username,
+    })
+
 # tag에 대한 내용을 필터링하기 위해 tag=None
 def post_list(request, tag=None):
     # annotate는 엑셀에서 컬럼을 추가하는 개념과 유사/ oreder_by에서 -는 역순
